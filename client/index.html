@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Respawn Lounge</title>
+    <meta name="description" content="Good games. Better company. Save your gameplay moments, make clips your own and find your crew at Respawn Lounge." />
+    <meta name="theme-color" content="#c6f36a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Respawn" />
+    <link rel="icon" type="image/svg+xml" href="/brand/logo.svg" />
+    <link rel="apple-touch-icon" href="/brand/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script src="/api/platform/config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });</script>
+
+  </body>
+
+</html>
