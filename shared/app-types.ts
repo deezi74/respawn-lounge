@@ -97,7 +97,7 @@ export const defaultPreferences: Preferences = {
   enabled: true,
   name: "Nova",
   avatar: "orbit",
-  accent: "#C6F36A",
+  accent: "#00E5FF",
   tone: "Chill",
   personalization: false,
   clipDuration: 30,

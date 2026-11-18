@@ -26,17 +26,17 @@ Community includes public/private Lounges, membership requests and owner approva
 
 ## Design
 
-Three distinct directions: arcade editorial (0.07), clean competitive broadcast (0.04), retro LAN terminal (0.06). Choose arcade editorial.
+The user corrected the visual direction: gamer-themed neon colors, not warm paper or pastel surfaces. Keep the working layout and all functionality; replace the visual palette throughout the app.
 
-**Design movement:** Contemporary arcade editorial, with warm paper surfaces and high-contrast gaming utility chrome, rather than a generic dark dashboard.
+**Design movement:** Neon arcade lounge with near-black gaming surfaces, electric accent lighting and high-contrast utility chrome.
 
 **Core principles:** Content-first asymmetry; clearly reachable actions; honest operational state; community over vanity metrics.
 
-**Color philosophy:** Warm ivory provides a calm everyday social space; near-black anchors the player and navigation; vivid acid-lime signals clipping and personal assistance. Coral is reserved for live status.
+**Color philosophy:** Midnight black #090B14 and dark indigo panels #121625 make gameplay the focus. Neon cyan #00E5FF leads navigation and action states; electric violet #A855F7 and hot pink #FF3DA6 distinguish Sidekick and community accents; acid lime #B6FF3B highlights capture. Bright neutral text remains readable without glowing body copy. Error/warning colors remain semantic.
 
 **Layout paradigm:** A narrow left navigation rail and spacious editorial content column on desktop, turning into a bottom thumb navigation and single-column flow on phones. Player/tray use adjacent workspace panels where space permits.
 
-**Signature elements:** A geometric respawn loop mark, small mono status labels, and lime rectangular action surfaces.
+**Signature elements:** A neon geometric respawn loop mark, small mono status labels, cyan/violet edge lighting and luminous clipping buttons. Apply the palette to forms, dialogs, editor, Sidekick, settings, mobile navigation, install icons and offline page—not just the discovery banner.
 
 **Interaction:** Immediate reversible capture; explicit public-action confirmation; real progress and error recovery.
 
@@ -50,7 +50,7 @@ Three distinct directions: arcade editorial (0.07), clean competitive broadcast 
 
 **Wordmark:** Lowercase respawn with a custom angular loop mark and compact LOUNGE sublabel.
 
-**Signature color:** Acid-lime #C6F36A.
+**Signature color:** Electric cyan #00E5FF, with electric violet and acid-lime supporting accents.
 
 ## Material constraints
 

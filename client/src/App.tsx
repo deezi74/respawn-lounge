@@ -8,9 +8,9 @@ import Home from "./pages/Home";
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster position="bottom-center" />
+          <Toaster position="bottom-center" theme="dark" />
           <Switch>
             {[
               "/",

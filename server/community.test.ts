@@ -120,7 +120,7 @@ describe("real community routes with a mocked durable row-lock contract", () => 
     expect(memoryOff.data.name).toBe("Saved Name"); expect(memoryOff.data.games).toEqual([]); expect(memoryOff.data.platform).toBe("PC");
     const cleared = await request("/api/app/settings", 1, "DELETE");
     expect(cleared.data.personalization).toBe(false); expect(cleared.data.clipDuration).toBe(60); expect(cleared.data.enabled).toBe(true); expect(cleared.data.games).toEqual([]); expect(cleared.data.tone).toBe("Chill");
-    expect(cleared.data.name).toBe("Nova"); expect(cleared.data.avatar).toBe("orbit"); expect(cleared.data.accent).toBe("#C6F36A");
+    expect(cleared.data.name).toBe("Nova"); expect(cleared.data.avatar).toBe("orbit"); expect(cleared.data.accent).toBe("#00E5FF");
     expect((await request("/api/app/settings", 1, "PATCH", { clipDuration: 10 })).status).toBe(400);
   });
   it("persists actual Studio title/game/schedule and denies another creator's source", async () => {

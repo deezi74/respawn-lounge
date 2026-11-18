@@ -114,7 +114,7 @@ export function MemberSettings() {
           </Field>
           <Field label="Accent color">
             <div className="color-choices">
-              {["#C6F36A", "#B8ADFF", "#FFAE87", "#9DDBED", "#FFD86A"].map(
+              {["#00E5FF", "#A855F7", "#FF3DA6", "#B6FF3B", "#FFCA47"].map(
                 c => (
                   <button
                     aria-label={`Accent ${c}`}
