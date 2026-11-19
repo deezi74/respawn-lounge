@@ -27,6 +27,7 @@ import {
   Check,
   Filter,
   Film,
+  PenLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -53,6 +54,12 @@ import Sidekick, { type SidekickContext } from "@/components/lounge/Sidekick";
 import { MemberSettings, Studio } from "@/components/lounge/SettingsStudio";
 import Invite from "@/components/lounge/Invite";
 import {
+  PostComposer,
+  PostFeed,
+  PostPage,
+  PostPrompt,
+} from "@/components/lounge/Posts";
+import {
   Empty,
   Loading,
   ErrorPanel,
@@ -74,6 +81,7 @@ export default function Home() {
     [mobileMenu, setMobileMenu] = useState(false),
     [upload, setUpload] = useState(false),
     [create, setCreate] = useState<"lounge" | "squad" | null>(null),
+    [composer, setComposer] = useState<{ loungeId?: string } | null>(null),
     [editor, setEditor] = useState<Clip | null>(null),
     [sidekick, setSidekick] = useState<SidekickContext | null>(null);
   useEffect(() => {
@@ -81,6 +89,7 @@ export default function Home() {
     setSidekick(null);
     setUpload(false);
     setCreate(null);
+    setComposer(null);
     if (user) {
       const invite = sessionStorage.getItem("respawn-pending-invite");
       if (invite && /^[a-zA-Z0-9-]{1,128}$/.test(invite)) {
@@ -99,9 +108,12 @@ export default function Home() {
   const [, watchParams] = useRoute("/watch/:id");
   const [, clipParams] = useRoute("/clip/:id");
   const [, inviteParams] = useRoute("/invite/:id");
+  const [, postParams] = useRoute("/post/:id");
   const prefs = prefQ.data || defaultPreferences;
   const mine =
-    loungeQ.data?.filter(l => l.members.includes(user?.id || -1)) || [];
+    loungeQ.data?.filter(
+      l => l.ownerId === user?.id || l.members.includes(user?.id || -1)
+    ) || [];
   function requireUser(action: () => void) {
     if (user) action();
     else {
@@ -112,6 +124,8 @@ export default function Home() {
   const openSidekick = (context: SidekickContext) =>
     requireUser(() => setSidekick(context));
   const openUpload = () => requireUser(() => setUpload(true));
+  const openPost = (loungeId?: string) =>
+    requireUser(() => setComposer({ loungeId }));
   const protectedPage = ["/tray", "/studio", "/settings", "/profile"].includes(
     path
   );
@@ -269,9 +283,12 @@ export default function Home() {
               />
               <kbd>/</kbd>
             </label>
-            <button className="btn small upload-top" onClick={openUpload}>
-              <Plus size={16} />
-              Create
+            <button
+              className="btn primary small post-top-create"
+              onClick={() => openPost()}
+            >
+              <PenLine size={16} />
+              Create Post
             </button>
             {user ? (
               <Link href="/profile" className="avatar small-avatar">
@@ -312,6 +329,8 @@ export default function Home() {
             )
           ) : inviteParams ? (
             <Invite id={inviteParams.id} />
+          ) : postParams ? (
+            <PostPage id={postParams.id} />
           ) : watchParams ? (
             <PlayerPage
               id={watchParams.id}
@@ -339,6 +358,9 @@ export default function Home() {
               search={search}
               profile={path === "/profile"}
               duration={prefs.clipDuration}
+              userId={user?.id}
+              userName={user?.name || undefined}
+              onPost={() => openPost()}
             />
           ) : path === "/lounges" ? (
             <Lounges
@@ -348,6 +370,7 @@ export default function Home() {
               userId={user?.id}
               onCreate={() => requireUser(() => setCreate("lounge"))}
               search={search}
+              onPost={openPost}
             />
           ) : path === "/squads" ? (
             <Squads
@@ -368,6 +391,8 @@ export default function Home() {
               onUpload={openUpload}
               onSidekick={() => openSidekick({})}
               search={search}
+              onPost={() => openPost()}
+              userName={user?.name || undefined}
             />
           )}
         </main>
@@ -400,6 +425,24 @@ export default function Home() {
           <span>Sidekick</span>
         </button>
       </nav>
+      {!composer && !editor && !sidekick && (
+        <button
+          className="post-mobile-create"
+          onClick={() => openPost()}
+          aria-label="Create Post"
+        >
+          <PenLine size={21} />
+          <span>Post</span>
+        </button>
+      )}
+      {composer && user && (
+        <PostComposer
+          lounges={mine}
+          userName={user.name || undefined}
+          initialLoungeId={composer.loungeId}
+          onClose={() => setComposer(null)}
+        />
+      )}
       {sidekick && (
         <Sidekick
           context={sidekick}
@@ -437,6 +480,8 @@ function Discover({
   onUpload,
   onSidekick,
   search,
+  onPost,
+  userName,
 }: {
   sources: Source[];
   clips: Clip[];
@@ -445,6 +490,8 @@ function Discover({
   onUpload: () => void;
   onSidekick: () => void;
   search: string;
+  onPost: () => void;
+  userName?: string;
 }) {
   const [filter, setFilter] = useState("For you");
   const games = [...new Set(sources.map(s => s.game))];
@@ -476,6 +523,8 @@ function Discover({
           <ArrowUpRight size={16} />
         </Link>
       </div>
+      <PostPrompt onCreate={onPost} userName={userName} />
+      <PostFeed search={search} title="Around the Lounge" onCreate={onPost} />
       <div className="discover-feature">
         <div className="feature-copy">
           <span className="feature-badge">
@@ -731,6 +780,9 @@ function Tray({
   search,
   profile,
   duration,
+  userId,
+  userName,
+  onPost,
 }: {
   clips: Clip[];
   loading: boolean;
@@ -740,6 +792,9 @@ function Tray({
   search: string;
   profile?: boolean;
   duration: number;
+  userId?: number;
+  userName?: string;
+  onPost?: () => void;
 }) {
   const [filter, setFilter] = useState("All moments");
   const filtered = clips.filter(
@@ -753,17 +808,37 @@ function Tray({
     <>
       <div className="page-heading row">
         <div>
-          <span className="eyebrow">YOUR PERSONAL HIGHLIGHT REEL</span>
+          <span className="eyebrow">
+            {profile ? "YOUR PROFILE" : "YOUR PERSONAL HIGHLIGHT REEL"}
+          </span>
           <h1>
             {profile ? "Your plays. Your people." : "Keep the good stuff."}
           </h1>
-          <p>Saved in one tap. Private until you say otherwise.</p>
+          <p>
+            {profile
+              ? "Your posts, photos and saved moments—all in one place."
+              : "Saved in one tap. Private until you say otherwise."}
+          </p>
         </div>
         <button className="btn sidekick-btn" onClick={() => onSidekick({})}>
           <Sparkles size={17} />
           Ask your Sidekick
         </button>
       </div>
+      {profile && userId && onPost && (
+        <>
+          <PostPrompt onCreate={onPost} userName={userName} />
+          <PostFeed
+            ownerId={userId}
+            title="Your posts"
+            search={search}
+            onCreate={onPost}
+          />
+          <div className="section-head">
+            <h2>Your saved clips</h2>
+          </div>
+        </>
+      )}
       <div className="tray-summary">
         <div>
           <Scissors size={22} />
@@ -839,6 +914,7 @@ function Lounges({
   userId,
   onCreate,
   search,
+  onPost,
 }: {
   lounges: Lounge[];
   loading: boolean;
@@ -846,6 +922,7 @@ function Lounges({
   userId?: number;
   onCreate: () => void;
   search: string;
+  onPost: (loungeId?: string) => void;
 }) {
   const refresh = useRefresh();
   const [confirm, setConfirm] = useState<{ l: Lounge; uid?: number } | null>(
@@ -956,7 +1033,26 @@ function Lounges({
                       ))}
                     </div>
                   )}
-                  {l.members.includes(userId || -1) && <LoungeFeed id={l.id} />}
+                  {(l.ownerId === userId ||
+                    l.members.includes(userId || -1)) && (
+                    <>
+                      <div className="post-lounge-entry">
+                        <button
+                          className="btn small full"
+                          onClick={() => onPost(l.id)}
+                        >
+                          <PenLine size={15} /> Post to Lounge
+                        </button>
+                        <PostFeed
+                          loungeId={l.id}
+                          title="Lounge posts"
+                          compact
+                          onCreate={() => onPost(l.id)}
+                        />
+                      </div>
+                      <LoungeFeed id={l.id} />
+                    </>
+                  )}
                 </div>
               </section>
             ))}

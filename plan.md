@@ -59,3 +59,11 @@ A new community starts empty. Real broadcast and the delayed-live verification r
 ## Approved change — live provider deferred
 
 The user explicitly chose “Build the rest and leave live-provider connection disabled for now.” Do not require provider credentials, create paid live resources, or claim live-broadcast tests passed. Keep disconnected availability explicit and supported integration ready for later connection. Complete actual uploaded-video clipping, editor, private community, squads, Sidekick and responsive/installable web experience now.
+
+## Approved addition — regular posts
+
+Add real text and photo posts in the existing gamer-neon style. A visible Create Post action on desktop and mobile opens a composer with text, up to four JPG/PNG/WebP photos (8 MiB each), local previews/removal and a clear profile/public or joined-Lounge destination. Text-only and photo-only posts are supported; empty posts are rejected. The explicit Post button publishes only to the displayed audience. Keep video upload separately discoverable.
+
+Persist post records in the existing managed appRecords table and sanitized photos in durable object storage. Decode and re-encode uploaded photos with Sharp, bound bytes/pixels/dimensions, remove metadata and reject unsupported/invalid files. Never expose storage keys or signed object URLs. Private-Lounge posts/photos require current membership on every read; audience derives from the selected Lounge and cannot be broadened by client fields. Only the author can edit text/remove attachments or delete a post. Deletion revokes app access but does not promise physical object deletion.
+
+Show regular posts in a Discover community feed, My Profile and each joined Lounge, with durable refresh, real author/time/audience labels, photo enlargement and shareable post links. Add /post/:id and keep route declarations in sync. Keep empty/error/uploading states truthful, revoke local preview blobs and partition query data by authenticated identity. Reuse the existing neon variables and responsive layout without new decorative assets or fabricated posts.

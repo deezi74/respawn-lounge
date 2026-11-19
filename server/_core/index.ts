@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerMediaRoutes } from "../features/media";
 import { registerCommunityRoutes } from "../features/community";
 import { registerSidekickRoutes } from "../features/sidekick";
+import { registerPostRoutes } from "../features/posts";
 
 async function startServer() {
   const app = express();
@@ -29,6 +30,7 @@ async function startServer() {
   registerMediaRoutes(app);
   registerCommunityRoutes(app);
   registerSidekickRoutes(app);
+  registerPostRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

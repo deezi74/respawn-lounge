@@ -23,6 +23,7 @@ export default function App() {
               "/watch/:id",
               "/clip/:id",
               "/invite/:id",
+              "/post/:id",
             ].map(path => (
               <Route key={path} path={path} component={Home} />
             ))}
