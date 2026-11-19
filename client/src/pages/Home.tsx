@@ -28,6 +28,7 @@ import {
   Filter,
   Film,
   PenLine,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -53,6 +54,10 @@ import ClipEditor from "@/components/lounge/ClipEditor";
 import Sidekick, { type SidekickContext } from "@/components/lounge/Sidekick";
 import { MemberSettings, Studio } from "@/components/lounge/SettingsStudio";
 import Invite from "@/components/lounge/Invite";
+import { ProfilePage, PeoplePage } from "@/components/lounge/Profile";
+import ProfileEditor from "@/components/lounge/ProfileEditor";
+import { MemberAvatar } from "@/components/lounge/MemberAvatar";
+import type { Profile } from "@shared/profile-types";
 import {
   PostComposer,
   PostFeed,
@@ -69,6 +74,8 @@ import {
 } from "@/components/lounge/Controls";
 const navigation = [
   { path: "/", label: "Discover", Icon: Compass },
+  { path: "/people", label: "Find Your People", Icon: Users },
+  { path: "/profile", label: "My Profile", Icon: UserRound },
   { path: "/lounges", label: "My Lounges", Icon: Users },
   { path: "/tray", label: "Clip Tray", Icon: Layers },
   { path: "/squads", label: "Find a Squad", Icon: Gamepad2 },
@@ -104,11 +111,14 @@ export default function Home() {
   const loungeQ = useData<Lounge[]>("/lounges");
   const squadQ = useData<Squad[]>("/squads");
   const prefQ = useData<Preferences>("/settings", !!user);
+  const myProfileQ = useData<Profile>("/profile/me", !!user);
   const services = useData<ServiceState>("/services");
   const [, watchParams] = useRoute("/watch/:id");
   const [, clipParams] = useRoute("/clip/:id");
   const [, inviteParams] = useRoute("/invite/:id");
   const [, postParams] = useRoute("/post/:id");
+  const [, memberParams] = useRoute("/u/:id");
+  const displayName = myProfileQ.data?.displayName || user?.name || "Gamer";
   const prefs = prefQ.data || defaultPreferences;
   const mine =
     loungeQ.data?.filter(
@@ -126,9 +136,13 @@ export default function Home() {
   const openUpload = () => requireUser(() => setUpload(true));
   const openPost = (loungeId?: string) =>
     requireUser(() => setComposer({ loungeId }));
-  const protectedPage = ["/tray", "/studio", "/settings", "/profile"].includes(
-    path
-  );
+  const protectedPage = [
+    "/tray",
+    "/studio",
+    "/settings",
+    "/profile",
+    "/profile/edit",
+  ].includes(path);
   const title =
     path === "/tray"
       ? "Clip Tray"
@@ -142,7 +156,13 @@ export default function Home() {
               ? "Settings"
               : path === "/profile"
                 ? "My Profile"
-                : "Discover";
+                : path === "/profile/edit"
+                  ? "Customize Profile"
+                  : path === "/people"
+                    ? "Find Your People"
+                    : memberParams
+                      ? "Member Profile"
+                      : "Discover";
   return (
     <div className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "mobile-open" : ""}`}>
@@ -234,12 +254,16 @@ export default function Home() {
           <div className="sidebar-profile">
             {user ? (
               <>
-                <Link href="/profile" className="avatar">
-                  {user.name?.[0]?.toUpperCase() || "G"}
+                <Link href="/profile" aria-label="My profile">
+                  <MemberAvatar
+                    userId={user.id}
+                    name={displayName}
+                    className="avatar"
+                  />
                 </Link>
                 <Link href="/profile">
-                  <strong>{user.name || "Gamer"}</strong>
-                  <small>Make yourself at home</small>
+                  <strong>{displayName}</strong>
+                  <small>Your world. Make it yours.</small>
                 </Link>
                 <button
                   className="icon-btn"
@@ -291,8 +315,12 @@ export default function Home() {
               Create Post
             </button>
             {user ? (
-              <Link href="/profile" className="avatar small-avatar">
-                {user.name?.[0]?.toUpperCase() || "G"}
+              <Link href="/profile" aria-label="My profile">
+                <MemberAvatar
+                  userId={user.id}
+                  name={displayName}
+                  className="avatar small-avatar"
+                />
               </Link>
             ) : (
               <button className="text-btn" onClick={startLogin}>
@@ -331,6 +359,20 @@ export default function Home() {
             <Invite id={inviteParams.id} />
           ) : postParams ? (
             <PostPage id={postParams.id} />
+          ) : memberParams ? (
+            Number.isSafeInteger(Number(memberParams.id)) &&
+            Number(memberParams.id) > 0 ? (
+              <ProfilePage
+                key={`${user?.id || "anonymous"}:${memberParams.id}`}
+                ownerId={Number(memberParams.id)}
+                onPost={() => openPost()}
+              />
+            ) : (
+              <Empty
+                title="Profile not found"
+                description="This profile link is not available."
+              />
+            )
           ) : watchParams ? (
             <PlayerPage
               id={watchParams.id}
@@ -346,9 +388,15 @@ export default function Home() {
             />
           ) : path === "/settings" ? (
             <MemberSettings />
+          ) : path === "/profile/edit" ? (
+            <ProfileEditor key={user?.id} />
+          ) : path === "/profile" ? (
+            <ProfilePage key={user?.id} onPost={() => openPost()} />
+          ) : path === "/people" ? (
+            <PeoplePage search={search} />
           ) : path === "/studio" ? (
             <Studio onUpload={openUpload} />
-          ) : path === "/tray" || path === "/profile" ? (
+          ) : path === "/tray" ? (
             <Tray
               clips={trayQ.data || []}
               loading={trayQ.isLoading}
@@ -356,10 +404,10 @@ export default function Home() {
               onEdit={setEditor}
               onSidekick={openSidekick}
               search={search}
-              profile={path === "/profile"}
+              profile={false}
               duration={prefs.clipDuration}
               userId={user?.id}
-              userName={user?.name || undefined}
+              userName={displayName}
               onPost={() => openPost()}
             />
           ) : path === "/lounges" ? (
@@ -392,12 +440,12 @@ export default function Home() {
               onSidekick={() => openSidekick({})}
               search={search}
               onPost={() => openPost()}
-              userName={user?.name || undefined}
+              userName={user ? displayName : undefined}
             />
           )}
         </main>
         <footer className="app-footer">
-          <span>GOOD GAMES. BETTER COMPANY.</span>
+          <span>YOUR PEOPLE. YOUR PLAYS. YOUR WORLD.</span>
           <span>
             <i className={services.data?.processing ? "status-live" : ""} />{" "}
             Media {services.data?.processing ? "ready" : "checking"}
@@ -412,11 +460,15 @@ export default function Home() {
             <span>
               {p === "/"
                 ? "Discover"
-                : p === "/lounges"
-                  ? "Lounges"
-                  : p === "/tray"
-                    ? "Clips"
-                    : "Squads"}
+                : p === "/people"
+                  ? "People"
+                  : p === "/profile"
+                    ? "My Profile"
+                    : p === "/lounges"
+                      ? "Lounges"
+                      : p === "/tray"
+                        ? "Clips"
+                        : "Squads"}
             </span>
           </Link>
         ))}
@@ -438,7 +490,7 @@ export default function Home() {
       {composer && user && (
         <PostComposer
           lounges={mine}
-          userName={user.name || undefined}
+          userName={displayName}
           initialLoungeId={composer.loungeId}
           onClose={() => setComposer(null)}
         />
@@ -513,9 +565,11 @@ function Discover({
             YOUR PEOPLE. YOUR PLAYS.
           </span>
           <h1>
-            Good games start here<span className="lime-text">.</span>
+            Your world. Your people<span className="lime-text">.</span>
           </h1>
-          <p>Catch the action. Keep the moments. Find your crew.</p>
+          <p>
+            A social home for gamers, creators and streamers. Make it yours.
+          </p>
         </div>
         <Link href="/squads" className="btn">
           <Users size={17} />
@@ -528,27 +582,28 @@ function Discover({
       <div className="discover-feature">
         <div className="feature-copy">
           <span className="feature-badge">
-            <Scissors size={14} />A NEW WAY TO KEEP THE GOOD STUFF
+            <Gamepad2 size={14} />
+            NO DEFAULT PERSONALITIES HERE
           </span>
           <h2>
-            Some moments
+            Your people.
             <br />
-            deserve a <span>respawn.</span>
+            Your plays. <span>Your space.</span>
           </h2>
           <p>
-            One tap to clip it. Your Sidekick to make it yours.
+            Post your world. Find your crew. Create your own corner.
             <br />
-            Your Lounge to share it with.
+            Custom profiles. Real conversations. All kinds of gamers.
           </p>
           <div>
-            <button className="btn primary" onClick={onUpload}>
-              <Upload size={17} />
-              Share your gameplay
+            <Link className="btn primary" href="/profile">
+              <UserRound size={17} />
+              Build your world
               <ArrowUpRight size={16} />
-            </button>
-            <button className="feature-sidekick-link" onClick={onSidekick}>
-              Meet your Sidekick
-              <Sparkles size={16} />
+            </Link>
+            <button className="feature-sidekick-link" onClick={onUpload}>
+              Upload gameplay
+              <Upload size={16} />
             </button>
           </div>
           <div className="feature-proof">

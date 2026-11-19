@@ -321,6 +321,14 @@ async function readable(id: string, userId?: number) {
   if (!post || !acl) fail(404, "Post not found");
   return { post, acl };
 }
+/** Social interactions use the same current post/Lounge access boundary as photo and post reads. */
+export async function assertPostReadable(
+  id: string,
+  userId?: number
+): Promise<{ ownerId: number }> {
+  const { post } = await readable(id, userId);
+  return { ownerId: post.ownerId };
+}
 async function author(id: string, user: User) {
   const post = await store.get<PostRecord>("post", id);
   if (!post || post.deletedAt) fail(404, "Post not found");

@@ -48,8 +48,19 @@ export function MemberSettings() {
       <div className="page-heading">
         <span className="eyebrow">YOUR SPACE. YOUR SETTINGS.</span>
         <h1>Make it personal.</h1>
-        <p>A little backup, exactly how you like it.</p>
+        <p>Your profile, social options and Sidekick—all in your hands.</p>
       </div>
+      <Link href="/profile/edit" className="settings-profile-entry">
+        <Settings2 size={25} />
+        <div>
+          <strong>Your profile. No default settings.</strong>
+          <span>
+            Background photos/videos, ghost images, avatars, custom colors,
+            layouts, social links and privacy.
+          </span>
+        </div>
+        <ArrowUpRight size={20} />
+      </Link>
       <div className="settings-columns">
         <section className="settings-card">
           <div className="settings-card-head">

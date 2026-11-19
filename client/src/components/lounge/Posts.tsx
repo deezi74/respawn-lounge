@@ -46,6 +46,11 @@ import {
   postPhotoError,
   postPhotoUrl,
 } from "./posts-utils";
+import { EmojiPicker } from "./EmojiPicker";
+import { insertEmoji } from "./emoji-utils";
+import { MemberAvatar } from "./MemberAvatar";
+import { MemberName } from "./MemberName";
+import { PostSocialControls } from "./SocialControls";
 import "./posts.css";
 
 type ComposerProps = {
@@ -62,6 +67,7 @@ type FeedProps = {
   title?: string;
   onCreate?: () => void;
   compact?: boolean;
+  readOnly?: boolean;
 };
 type DraftPhoto = { id: string; file: File; url: string };
 type RefreshPosts = () => Promise<unknown>;
@@ -256,6 +262,7 @@ function ComposerDialog({
   const [discard, setDiscard] = useState(false);
   const [published, setPublished] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const textInput = useRef<HTMLTextAreaElement>(null);
   const serial = useRef(0);
   const objectUrls = useRef(new Set<string>());
   const submitting = useRef(false);
@@ -385,6 +392,7 @@ function ComposerDialog({
           <div className="post-field">
             <label htmlFor={textId}>What would you like to share?</label>
             <textarea
+              ref={textInput}
               id={textId}
               rows={5}
               value={text}
@@ -445,6 +453,24 @@ function ComposerDialog({
             >
               <ImagePlus size={18} /> Add photos
             </button>
+            <EmojiPicker
+              disabled={disabled}
+              onSelect={emoji => {
+                const element = textInput.current;
+                const next = insertEmoji(
+                  text,
+                  emoji,
+                  element?.selectionStart,
+                  element?.selectionEnd,
+                  POST_LIMITS.text
+                );
+                setText(next.value);
+                requestAnimationFrame(() => {
+                  element?.focus();
+                  element?.setSelectionRange(next.caret, next.caret);
+                });
+              }}
+            />
             <span>
               {photos.length} / {POST_LIMITS.photos} · JPEG, PNG, WebP
               <br />8 MiB each · text optional with a photo
@@ -638,6 +664,7 @@ export function PostFeed({
   title,
   onCreate,
   compact = false,
+  readOnly = false,
 }: FeedProps) {
   const { user, loading } = useAuth();
   const params = new URLSearchParams();
@@ -671,7 +698,7 @@ export function PostFeed({
             </p>
           )}
         </div>
-        {onCreate && (
+        {onCreate && !readOnly && (
           <button
             type="button"
             className="post-button post-button-primary"
@@ -697,6 +724,7 @@ export function PostFeed({
               key={`${user?.id ?? "anonymous"}:${post.id}`}
               post={post}
               userId={user?.id}
+              readOnly={readOnly}
               refreshPhotos={() => query.refetch()}
             />
           ))}
@@ -716,7 +744,7 @@ export function PostFeed({
               ? "Try another word from the post or the author’s name."
               : "Text, photos, or a little of both. Share when you’re ready."}
           </p>
-          {onCreate && !search.trim() && (
+          {onCreate && !readOnly && !search.trim() && (
             <button type="button" className="post-button" onClick={onCreate}>
               <Pencil size={17} />
               Write a post
@@ -796,11 +824,13 @@ function PostCard({
   userId,
   refreshPhotos,
   onDeleted,
+  readOnly = false,
 }: {
   post: RegularPost;
   userId?: number;
   refreshPhotos: RefreshPosts;
   onDeleted?: () => void;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -820,13 +850,22 @@ function PostCard({
       aria-label={`Post by ${post.ownerName}`}
     >
       <header className="regular-post-header">
-        <span className="post-avatar" aria-hidden="true">
-          {post.ownerName.trim().slice(0, 1).toLocaleUpperCase() || (
-            <MessageSquare size={18} />
-          )}
-        </span>
+        <Link
+          href={`/u/${post.ownerId}`}
+          aria-label={`View ${post.ownerName}’s profile`}
+        >
+          <MemberAvatar
+            userId={post.ownerId}
+            name={post.ownerName}
+            className="post-avatar"
+          />
+        </Link>
         <div className="regular-post-author">
-          <strong>{post.ownerName}</strong>
+          <strong>
+            <Link href={`/u/${post.ownerId}`}>
+              <MemberName userId={post.ownerId} fallback={post.ownerName} />
+            </Link>
+          </strong>
           <div className="regular-post-time">
             <Link
               className="regular-post-permalink"
@@ -890,7 +929,7 @@ function PostCard({
           <Link2 size={17} />
           Share link
         </button>
-        {author && (
+        {author && !readOnly && (
           <div className="regular-post-owner-actions">
             <button
               type="button"
@@ -913,15 +952,21 @@ function PostCard({
           </div>
         )}
       </footer>
+      {!readOnly && <PostSocialControls postId={post.id} />}
+      {readOnly && (
+        <p className="social-note">
+          Read-only post preview · no post changes are made here.
+        </p>
+      )}
       {sharing && <SharePost post={post} onClose={() => setSharing(false)} />}
-      {editing && author && (
+      {editing && author && !readOnly && (
         <EditPost
           post={post}
           onRefreshPhotos={refreshPhotos}
           onClose={() => setEditing(false)}
         />
       )}
-      {deleting && author && (
+      {deleting && author && !readOnly && (
         <DeletePost
           post={post}
           onClose={() => setDeleting(false)}
@@ -1253,6 +1298,21 @@ function EditPost({
               {POST_LIMITS.text.toLocaleString()} characters
             </span>
           </div>
+          <EmojiPicker
+            disabled={busy}
+            onSelect={emoji =>
+              setText(
+                value =>
+                  insertEmoji(
+                    value,
+                    emoji,
+                    value.length,
+                    value.length,
+                    POST_LIMITS.text
+                  ).value
+              )
+            }
+          />
           {keepIds.length > 0 && (
             <div className="post-draft-grid" aria-label="Photos to keep">
               {original.photos

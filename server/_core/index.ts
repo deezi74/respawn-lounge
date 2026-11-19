@@ -11,6 +11,8 @@ import { registerMediaRoutes } from "../features/media";
 import { registerCommunityRoutes } from "../features/community";
 import { registerSidekickRoutes } from "../features/sidekick";
 import { registerPostRoutes } from "../features/posts";
+import { registerProfileRoutes } from "../features/profiles";
+import { registerSocialRoutes } from "../features/social";
 
 async function startServer() {
   const app = express();
@@ -31,6 +33,8 @@ async function startServer() {
   registerCommunityRoutes(app);
   registerSidekickRoutes(app);
   registerPostRoutes(app);
+  registerProfileRoutes(app);
+  registerSocialRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",
