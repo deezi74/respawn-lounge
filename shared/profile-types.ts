@@ -1,3 +1,8 @@
+import {
+  defaultProfileWorld,
+  type ProfileWorld,
+  type WorldMedia,
+} from "./profile-world-types";
 export const PROFILE_ROLES = ["gamer", "creator", "streamer"] as const;
 export type ProfileRole = (typeof PROFILE_ROLES)[number];
 export const PROFILE_MODULES = [
@@ -111,6 +116,8 @@ export type Profile = {
   bannerMediaId: string | null;
   backgroundMediaId: string | null;
   ghostMediaId: string | null;
+  world: ProfileWorld;
+  worldMedia: WorldMedia;
   theme: ProfileTheme;
   settings: ProfileSettings;
   media: {
@@ -125,7 +132,7 @@ export type Profile = {
 };
 export type ProfileInput = Omit<
   Profile,
-  "ownerId" | "media" | "createdAt" | "updatedAt" | "saved"
+  "ownerId" | "media" | "worldMedia" | "createdAt" | "updatedAt" | "saved"
 >;
 export function defaultProfile(
   ownerId: number,
@@ -148,6 +155,8 @@ export function defaultProfile(
     bannerMediaId: null,
     backgroundMediaId: null,
     ghostMediaId: null,
+    world: defaultProfileWorld(),
+    worldMedia: {},
     theme: {
       backgroundMode: "gradient",
       backgroundColor: "#090b14",

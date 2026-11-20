@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { api, errorMessage, patch, useData, useRefresh } from "@/lib/app-api";
+import { api, errorMessage, useData, useRefresh } from "@/lib/app-api";
 import { startLogin } from "@/const";
 import {
   AVATAR_EMOJIS,
@@ -38,6 +38,8 @@ import {
 import { ProfileMediaUpload as UploadField } from "./MemberAvatar";
 import { EmojiPicker } from "./EmojiPicker";
 import { insertEmoji } from "./emoji-utils";
+import { WorldEditor, useWorldUpload } from "./WorldEditor";
+import { selectedWorldMedia, withProfileWorld } from "./world-utils";
 
 import {
   PROFILE_TEXT_LIMITS as LIMITS,
@@ -64,10 +66,11 @@ import {
 } from "./profile-utils";
 import "./profile.css";
 
-type EditorTab = "identity" | "appearance" | "media" | "privacy";
+type EditorTab = "identity" | "appearance" | "world" | "media" | "privacy";
 const TABS = [
   { key: "identity", label: "Identity", icon: UserRound },
   { key: "appearance", label: "Appearance", icon: Palette },
+  { key: "world", label: "Personal page", icon: Eye },
   { key: "media", label: "Artwork", icon: ImagePlus },
   { key: "privacy", label: "Privacy", icon: Shield },
 ] as const;
@@ -102,8 +105,8 @@ export default function ProfileEditor() {
 
 function EditorWorkspace({ initial }: { initial: Profile }) {
   // Deliberately initialize once per account, never from the ten-second query updates.
-  const [draft, setDraft] = useState<Profile>(() => structuredClone(initial));
-  const [baseline, setBaseline] = useState<Profile>(() => structuredClone(initial));
+  const [draft, setDraft] = useState<Profile>(() => structuredClone(withProfileWorld(initial)));
+  const [baseline, setBaseline] = useState<Profile>(() => structuredClone(withProfileWorld(initial)));
   const [tab, setTab] = useState<EditorTab>("identity");
   const [saving, setSaving] = useState(false),
     [uploading, setUploading] = useState<ProfileSlot | null>(null);
@@ -115,7 +118,8 @@ function EditorWorkspace({ initial }: { initial: Profile }) {
     abort = useRef<AbortController | null>(null);
   const refresh = useRefresh();
   const formId = useId();
-  const busy = saving || uploading !== null;
+  const { worldUploading, uploadWorld } = useWorldUpload({ lock, active, abort, setDraft, setError, setNotice });
+  const busy = saving || uploading !== null || worldUploading !== null;
   const dirty = JSON.stringify(profileInput(draft)) !== JSON.stringify(profileInput(baseline));
   useEffect(() => {
     active.current = true;
@@ -287,16 +291,18 @@ function EditorWorkspace({ initial }: { initial: Profile }) {
     setSaving(true);
     setError(null);
     setNotice("");
+    abort.current = new AbortController();
     let saved = refreshPending;
     try {
       if (!refreshPending) {
-        const result = await patch<Profile>("/profile/me", {
-          ...profileInput(draft),
-          confirmed: true,
+        const result = await api<Profile>("/profile/me", {
+          method: "PATCH",
+          body: JSON.stringify({ ...profileInput(draft), confirmed: true }),
+          signal: abort.current.signal,
         });
         if (!active.current) return;
-        setBaseline(structuredClone(result));
-        setDraft(structuredClone(result));
+        setBaseline(structuredClone(withProfileWorld(result)));
+        setDraft(structuredClone(withProfileWorld(result)));
         saved = true;
         setRefreshPending(true);
       }
@@ -406,6 +412,17 @@ function EditorWorkspace({ initial }: { initial: Profile }) {
                 aria-labelledby={`${formId}-${tab}-tab`}
                 className="profile-editor-panel"
               >
+                {tab === "world" && <WorldEditor draft={draft} busy={busy || refreshPending}
+                  uploading={worldUploading} onUpload={uploadWorld}
+                  onChange={world => {
+                    if (lock.current) return;
+                    setDraft(previous => ({ ...previous, world, worldMedia: selectedWorldMedia(world, previous.worldMedia) }));
+                    setNotice("");
+                  }} onPreset={profile => {
+                    if (lock.current) return;
+                    setDraft(profile);
+                    setNotice("Blue Chrome composition loaded into your local draft. Save profile to apply.");
+                  }} />}
                 {tab === "identity" && (
                   <>
                     <EditorSection
@@ -902,8 +919,8 @@ function EditorWorkspace({ initial }: { initial: Profile }) {
               disabled={busy}
             >
               {busy ? <Loader2 size={17} className="profile-spin" /> : <Save size={17} />}
-              {uploading
-                ? `Uploading ${uploading}…`
+              {uploading || worldUploading
+                ? `Uploading ${uploading || worldUploading}…`
                 : saving
                   ? "Saving…"
                   : refreshPending

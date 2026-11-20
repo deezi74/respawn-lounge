@@ -43,7 +43,10 @@ import {
 import { PostFeed } from "./Posts";
 import { FollowControls } from "./SocialControls";
 import { colorWithOpacity, safeSocialUrl, validHex } from "./profile-utils";
+import { ProfileWorld } from "./ProfileWorld";
+import { profileWorld } from "./world-utils";
 import "./profile.css";
+import "./profile-world.css";
 
 export const PROFILE_SECTION_LABELS: Record<ProfileModule, string> = {
   about: "About me",
@@ -157,6 +160,7 @@ export function ProfileSurface({
   onPost?: () => void;
 }) {
   const t = profile.theme;
+  const world = profileWorld(profile.world);
   const color = (value: string, fallback: string) =>
     validHex(value) ? value : fallback;
   const style = {
@@ -197,7 +201,9 @@ export function ProfileSurface({
   }
   return (
     <article
-      className={`member-world member-layout-${t.layout}${preview ? " member-preview" : ""}`}
+      className={`member-world member-layout-${t.layout} member-chrome-${world.chrome} member-portrait-${world.portrait} member-width-${world.pageWidth}${preview ? " member-preview" : ""}`}
+      data-chrome={world.chrome}
+      data-reduced-motion={profile.settings.reducedMotion || undefined}
       style={style}
       aria-label={`${profile.displayName}’s ${preview ? "profile preview" : "profile"}`}
     >
@@ -224,6 +230,13 @@ export function ProfileSurface({
             <span className="member-banner-symbol" aria-hidden="true">
               ✧
             </span>
+            {world.chrome === "chrome" && (
+              <div className="member-banner-name">
+                <span>THE PERSONAL WORLD OF</span>
+                <strong>{profile.displayName || "Your display name"}</strong>
+                {profile.headline && <p>{profile.headline}</p>}
+              </div>
+            )}
           </div>
           <div className="member-hero-body">
             <div className="member-identity-row">
@@ -339,6 +352,7 @@ export function ProfileSurface({
               <section
                 key={module}
                 className={`member-module member-panel member-module-${module}`}
+                style={{ order: t.moduleOrder.indexOf(module) === 0 ? 0 : 100 + t.moduleOrder.indexOf(module) }}
                 aria-label={PROFILE_SECTION_LABELS[module]}
               >
                 <div className="member-module-heading">
@@ -425,8 +439,9 @@ export function ProfileSurface({
                 )}
               </section>
             ))}
+          <ProfileWorld profile={profile} preview={preview} />
         </div>
-        {!t.moduleOrder.some(module => t.modules[module]) && (
+        {!t.moduleOrder.some(module => t.modules[module]) && !world.moduleOrder.some(module => world.modules[module]) && (
           <div className="member-panel member-no-sections">
             A quieter kind of world. All profile sections are hidden.
           </div>

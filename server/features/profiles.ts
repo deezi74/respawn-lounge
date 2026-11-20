@@ -21,6 +21,15 @@ import {
   type ProfileRecord,
 } from "./profile-media";
 import * as store from "./store";
+import {
+  worldSchema,
+  worldDTOSchema,
+  validateWorldAssets,
+  validateWorldPeople,
+  serializeWorldMedia,
+  registerWorldFeaturedRoute,
+} from "./profile-world";
+import { registerWorldMediaRoutes } from "./profile-world-media";
 
 // Profile appearance is structured data, never HTML, CSS, scripts or external artwork URLs.
 const text = (max: number) =>
@@ -171,14 +180,19 @@ const inputSchema = z
     bannerMediaId: mediaId,
     backgroundMediaId: mediaId,
     ghostMediaId: mediaId,
+    world: worldSchema,
     theme: themeSchema,
     settings: settingsSchema,
   })
   .strict();
-const patchSchema = inputSchema.extend({ confirmed: z.literal(true) });
+const patchSchema = inputSchema.extend({
+  world: worldSchema.removeDefault().optional(),
+  confirmed: z.literal(true),
+});
 // Nested strip schemas are a defense-in-depth DTO whitelist for legacy/unexpected stored fields.
 const dtoInputSchema = inputSchema
   .extend({
+    world: worldDTOSchema,
     theme: themeSchema.extend({ modules: modulesSchema.strip() }).strip(),
     settings: settingsSchema.strip(),
     links: z
@@ -186,7 +200,9 @@ const dtoInputSchema = inputSchema
       .max(PROFILE_LIMITS.links),
   })
   .strip();
-function parseInput(value: unknown): ProfileInput {
+function parseInput(
+  value: unknown
+): Omit<ProfileInput, "world"> & { world?: ProfileInput["world"] } {
   const result = patchSchema.safeParse(value);
   if (!result.success)
     fail(400, result.error.issues[0]?.message ?? "Invalid profile settings");
@@ -199,6 +215,7 @@ function savedProfile(
   if (
     !value ||
     value.saved !== true ||
+    (value as ProfileRecord & { deletedAt?: string }).deletedAt ||
     !Number.isSafeInteger(value.ownerId) ||
     value.ownerId <= 0 ||
     value.id !== `profile:${value.ownerId}`
@@ -242,12 +259,16 @@ async function serialize(
     ...fields,
     ownerId: profile.ownerId,
     media,
+    worldMedia: await serializeWorldMedia(profile, viewerId),
     saved: profile.saved,
     ...(profile.createdAt ? { createdAt: profile.createdAt } : {}),
     ...(profile.updatedAt ? { updatedAt: profile.updatedAt } : {}),
   };
 }
-async function validateMedia(fields: ProfileInput, ownerId: number) {
+async function validateMedia(
+  fields: Omit<ProfileInput, "world">,
+  ownerId: number
+) {
   for (const slot of PROFILE_SLOTS) {
     const id = fields[`${slot}MediaId`];
     if (id === null) continue;
@@ -289,6 +310,10 @@ export function registerProfileRoutes(app: Express) {
       const user = await needUser(req),
         fields = parseInput(req.body);
       await validateMedia(fields, user.id);
+      if (fields.world) {
+        await validateWorldAssets(fields.world, user.id);
+        await validateWorldPeople(fields.world, user.id, savedProfile);
+      }
       const id = `profile:${user.id}`,
         now = new Date().toISOString();
       const write = (current?: ProfileRecord): ProfileRecord => {
@@ -296,6 +321,8 @@ export function registerProfileRoutes(app: Express) {
           fail(403, "Profile ownership does not match");
         return {
           ...fields,
+          // Older clients omit world. Preserve the row-locked current value rather than an earlier snapshot.
+          world: fields.world ?? worldDTOSchema.parse(current?.world),
           id,
           ownerId: user.id,
           saved: true,
@@ -387,4 +414,6 @@ export function registerProfileRoutes(app: Express) {
     })
   );
   registerProfileMediaRoutes(app);
+  registerWorldFeaturedRoute(app, { parse: savedProfile, serialize });
+  registerWorldMediaRoutes(app);
 }

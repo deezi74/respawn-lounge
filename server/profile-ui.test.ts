@@ -112,6 +112,7 @@ describe("complete profile drafts", () => {
     const {
       ownerId: _owner,
       media: _media,
+      worldMedia: _worldMedia,
       saved: _saved,
       createdAt: _created,
       updatedAt: _updated,

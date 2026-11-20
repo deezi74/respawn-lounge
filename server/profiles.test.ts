@@ -301,6 +301,7 @@ function input(): ProfileInput {
   const {
     ownerId: _ownerId,
     media: _media,
+    worldMedia: _worldMedia,
     saved: _saved,
     ...fields
   } = defaultProfile(1, "Real member");
@@ -318,6 +319,7 @@ function seed(
     saved: true,
   };
   delete (profile as any).media;
+  delete (profile as any).worldMedia;
   profile.settings.visibility = visibility;
   fake.records.set(`profile/profile:${ownerId}`, profile);
   return profile;

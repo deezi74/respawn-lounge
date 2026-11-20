@@ -29,3 +29,13 @@ The owner selected “Build the rest and leave live-provider connection disabled
 Use a current Chrome/Edge/Firefox/Safari browser. Install through the browser's Install app or Add to Home Screen option on supported phones and desktop. The PWA caches only a public offline page and icon—never private API responses or media. Native App Store/Play Store binaries are separate deliverables.
 
 Hosting, storage, video processing and AI may have operating costs. Building a working application is not a claim of unlimited free infrastructure or completed external live-broadcast verification.
+
+## Personal profiles: music, art and individual mini-sites
+
+Open **My Profile → Customize profile**. The appearance editor preserves solid/neon/custom colors, photo or silent-video backgrounds, faded ghost artwork, avatars/banners, fonts and module layouts. The **Chrome / Myspace-style** starting preset adds a full-width banner, large square portrait and framed panels; it is optional, not forced on everyone.
+
+In the personal-page controls, add a favorite quote, favorite artists/music, named custom panels, selected featured people, an artwork gallery and a personal playlist. You can hide and reorder the personal modules. Featured people must be actual readable profiles, and entries whose privacy changes are no longer shown. Profile visibility is separate from the existing audiences of posts and clips.
+
+Upload music you own or have permission to share: MP3, WAV, M4A or OGG, up to **15 MiB and 10 minutes per track**, with **three tracks** per profile. The app normalizes audio to metadata-free MP3 rather than trusting its extension. No third-party commercial music library or copyrighted songs are bundled. Artwork supports **12 JPEG/PNG/WebP images**, up to **8 MiB each**, with titles and captions. Uploads remain owner-only drafts until explicitly selected in **Save profile**. Replacing/removing artwork or making the profile private revokes others' old application media links; this is not a promise of physical storage deletion.
+
+Visitors press Play themselves. Music never audibly autoplays. The player supports play/pause, seeking, volume, previous/next tracks and stops when leaving the profile. Temporary private-media credentials are renewed through the same current-visibility permission checks. Reduced-motion users receive nonmoving decorative equalizer bars. Existing saved profiles are upgraded with empty personal-page defaults, without erasing their appearance or visibility settings.

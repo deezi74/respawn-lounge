@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Plus, X } from "lucide-react";
 import type { ProfileTheme } from "@shared/profile-types";
+import { profileWorld, validateWorldDraft } from "./world-utils";
 import {
   PROFILE_LIMITS,
   type Profile,
@@ -101,6 +102,7 @@ export function profileInput(profile: Profile): ProfileInput {
     bannerMediaId: profile.bannerMediaId,
     backgroundMediaId: profile.backgroundMediaId,
     ghostMediaId: profile.ghostMediaId,
+    world: profileWorld(profile.world),
     theme: profile.theme,
     settings: profile.settings,
   });
@@ -227,7 +229,7 @@ export function validateProfileDraft(profile: Profile): string | null {
     profile.media.background?.kind !== "video"
   )
     return "Upload a background video, or choose a different background style.";
-  return null;
+  return validateWorldDraft(profile.world);
 }
 
 // Declarative controls keep all appearance/privacy fields auditable against the typed model.

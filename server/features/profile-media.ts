@@ -24,7 +24,7 @@ import {
 import { command } from "./processing";
 import * as store from "./store";
 
-export type ProfileRecord = Omit<Profile, "media"> & { id: string };
+export type ProfileRecord = Omit<Profile, "media" | "worldMedia"> & { id: string };
 export const PROFILE_SLOTS = [
   "avatar",
   "banner",
